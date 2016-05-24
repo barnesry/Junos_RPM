@@ -26,8 +26,8 @@ The default login here is admin/admin
 
 Create a new dashboard with a single metric panel using two queries.
     
-    SELECT value/1000 FROM "rpm_history" WHERE owner='starbucks-rpm'
-    SELECT value/1000 FROM "rpm_history" WHERE owner='level3-rpm'
+    SELECT value/1000 FROM "rpm_history" WHERE owner='http-rpm'
+    SELECT value/1000 FROM "rpm_history" WHERE owner='dns-rpm'
 
 ## vSRX
 Relevant RPM configuration configlet. In this instance, each test is 5 minutes long using a probe count of 5 with 60sec in between each probe.
@@ -133,9 +133,10 @@ data upon collection.
 ```
 rpm_history
 time	device	owner	test-name	value
-2016-05-18T11:45:40Z	"vSRX-NAT-GW.thelab.net"	"starbucks-rpm"	"http"	115578
-2016-05-18T11:47:40Z	"vSRX-NAT-GW.thelab.net"	"starbucks-rpm"	"http"	110396
-2016-05-18T11:48:40Z	"vSRX-NAT-GW.thelab.net"	"starbucks-rpm"	"http"	139676
-2016-05-18T11:49:40Z	"vSRX-NAT-GW.thelab.net"	"starbucks-rpm"	"http"	125401
-2016-05-18T11:50:40Z	"vSRX-NAT-GW.thelab.net"	"starbucks-rpm"	"http"	125037
-2016-05-18T11:51:40Z	"vSRX-NAT-GW.thelab.net"	"starbucks-rpm"	"http"	110834
+2016-05-18T11:45:40Z	"vSRX-NAT-GW.thelab.net"	"http-rpm"	"http"	115578
+2016-05-18T11:47:40Z	"vSRX-NAT-GW.thelab.net"	"http-rpm"	"http"	110396
+2016-05-18T11:48:40Z	"vSRX-NAT-GW.thelab.net"	"http-rpm"	"http"	139676
+2016-05-18T11:49:40Z	"vSRX-NAT-GW.thelab.net"	"http-rpm"	"http"	125401
+2016-05-18T11:50:40Z	"vSRX-NAT-GW.thelab.net"	"http-rpm"	"http"	125037
+2016-05-18T11:51:40Z	"vSRX-NAT-GW.thelab.net"	"http-rpm"	"http"	110834
+```
