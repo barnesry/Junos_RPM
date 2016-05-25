@@ -1,0 +1,248 @@
+system {
+    host-name {{ inventory_hostname }};
+    domain-name thelab.net;
+    time-zone America/Los_Angeles;
+    root-authentication {
+        encrypted-password "$1$nq.N1UsY$JxA/ESAj3KuXseXE597gg0"; ## SECRET-DATA (Juniper)
+        ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDUwxNLJ9Snbr5UeXTbY76IpTO9X/dk0JDN2ngvxeyKUSqFX6yUd6maFftoTL71trl55PwV1+xxFzZVaCdSId2MU2IsIOrnJE7phtEOCAPPPmDVqehOIGzEm6gidFgJRMLLXiHxLbNke0G1tqGiW/DzocKgFCa3CzR1OZ3wzGQFJjTtqW5JJXPWZjUuEuwbg803PQFzRuC1B86jbrj6mIphu0HgEvVRMiofif2EsYSWDTpmgW/B9+PdgDLT5cg1OfTNzto6uppNo04eLqxJIliEaHTacVr3tq4N9iAeE+T9zOXWfHzn1lYcB+DDJ+Mcwk6yLhXUmmM62hcgpDaog1Iv vagrant"; ## SECRET-DATA
+    }
+    name-server {
+        8.8.8.8;
+    }
+    scripts {
+        op {
+            file srx-show-top-applications.slax;
+        }
+    }
+    login {
+        user barnesry {
+            uid 2001;
+            class super-user;
+            authentication {
+                encrypted-password "$1$HFZHIPOd$tUctD/oAO36NkSrAut0ir."; ## SECRET-DATA
+                ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+meE8GUTaFAvpcZln8QPIPuc49QJW+iRMte8HH0EgS24ga3+cMmrFCXA/bllNBU3jZy2VeGTAZkhECwZjnPSE9Z6Fc/8Gw8D7ZevdPNOF4ZsUMskbrH4mqZ/SpQO3M60uizvbCpZN7TuKaZbPA9zn/gF3JLWUPpmGGiHztkzEDygZ9yRQON/qXyBrI7v8rb5zVe+8QgDNmr2msuVHlF701hM8GpIpEfP2+/7MYLxNQMJdS14NemVo7bXAP5Lw6mde//d99QHGUkm6ptTmBj/6nXUM1CFKUC/GH3n+2h6w1gtTtjUTM96rIcYi5amb8vIWa9oOA2BxidFaOOnFO5SP"; ## SECRET-DATA
+            }
+        }
+        user vagrant {
+            uid 2000;
+            class super-user;
+            authentication {
+                ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key"; ## SECRET-DATA
+            }
+        }
+    }
+    services {
+        ssh {
+            max-sessions-per-connection 32;
+        }
+        netconf {
+            ssh;
+        }
+        web-management {
+            http {
+                interface ge-0/0/1.0;
+            }
+        }
+    }
+    syslog {
+        user * {
+            any emergency;
+        }
+        file messages {
+            any any;
+            authorization info;
+            match "!RT_FLOW";
+        }
+        file interactive-commands {
+            interactive-commands any;
+        }
+        file session-log {
+            any any;
+            match RT_FLOW_SESSION;
+            archive size 5m files 5;
+        }
+        file default-log-messages {
+            any info;
+            match "(requested 'commit' operation)|(copying configuration to juniper.save)|(commit complete)|ifAdminStatus|(FRU power)|(FRU removal)|(FRU insertion)|(link UP)|transitioned|Transferred|transfer-file|(license add)|(license delete)|(package -X update)|(package -X delete)|(FRU Online)|(FRU Offline)|(plugged in)|(unplugged)|GRES";
+            structured-data;
+        }
+    }
+    license {
+        autoupdate {
+            url https://ae1.juniper.net/junos/key_retrieval;
+        }
+    }
+}
+interfaces {
+    ge-0/0/0 {
+        description "vbox_external_NAT";
+        unit 0 {
+            family inet {
+                dhcp;
+            }
+        }
+    }
+    lo0 {
+        description "Loopback";
+        unit 0 {
+            family inet {
+                address {{ host.loopback.ip }}/32;
+            }
+        }
+    }
+    {% for interface in interfaces %}
+    {{ interface.name }} {
+        description "{{ interface.description }}";
+        unit 0 {
+            family inet {
+                address {{ interface.ip }}/24
+            }
+        }
+    }
+    {% endfor %}
+}
+snmp {
+    community public;
+    trap-options {
+        source-address {{ host.loopback.ip }};
+    }
+}
+security {
+    forwarding-options {
+        family {
+            inet6 {
+                mode packet-based;
+            }
+            mpls {
+                mode packet-based;
+            }
+        }
+    }
+    address-book {
+        global {
+            address vboxnet0 {
+                description "address range for vboxnet0";
+                192.168.56.0/24;
+            }
+        }
+    }
+    inactive: nat {
+        source {
+            rule-set Zone_trust-Zone_untrust {
+                from zone trust;
+                to zone untrust;
+                rule trust-to-untrust {
+                    match {
+                        source-address 10.16.0.0/24;
+                        source-address-name [ vboxnet0 vmnet1 ];
+                        destination-address 0.0.0.0/0;
+                    }
+                    then {
+                        source-nat {
+                            interface;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    inactive: policies {
+        from-zone trust to-zone untrust {
+            policy trust-to-untrust {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit {
+                        application-services {
+                            application-firewall {
+                                rule-set APP-FW;
+                            }
+                        }
+                    }
+                    log {
+                        session-close;
+                    }
+                    count;
+                }
+            }
+        }
+        from-zone trust to-zone trust {
+            policy trust-to-trust {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                    log {
+                        session-close;
+                    }
+                    count;
+                }
+            }
+        }
+    }
+    inactive: zones {
+        security-zone trust {
+            interfaces {
+                ge-0/0/1.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            all;
+                        }
+                    }
+                }
+            }
+            application-tracking;
+        }
+        security-zone untrust {
+            interfaces {
+                ge-0/0/0.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            dhcp;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+services {
+    rpm {
+        probe test-owner-rpm {
+            test http {
+                probe-type http-get;
+                target url http://www.google.com;
+                probe-count 5;
+                probe-interval 60;
+                test-interval 60;
+                history-size 10;
+                thresholds {
+                    successive-loss 2;
+                    total-loss 3;
+                }
+                traps test-failure;
+            }
+        }
+        probe dns-rpm {
+            test ping {
+                probe-type icmp-ping;
+                target address 8.8.8.8;
+                probe-count 5;
+                probe-interval 60;
+                test-interval 60;
+                history-size 10;
+                thresholds {
+                    successive-loss 2;
+                    total-loss 3;
+                }
+                traps test-failure;
+            }
+        }
+    }
+}

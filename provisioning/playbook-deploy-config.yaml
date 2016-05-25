@@ -1,0 +1,26 @@
+# This task configures all devices
+- name: Generate and Deploy Configuration to vsrx gatewy
+  hosts: vsrx
+  connection: local
+  gather_facts: no
+  roles:
+    - Juniper.junos
+  tasks:
+    - name: Build configuration
+      template: src=vsrx.conf.j2 dest=/tmp/{{ inventory_hostname }}.conf
+
+    - name: Display all variables/facts known for a host
+      debug: var=hostvars[inventory_hostname]
+
+    - name: Deploy config to device ... please wait
+      junos_install_config:
+        host={{ ansible_ssh_host }}
+        port={{ ansible_ssh_port }}
+        user={{ ansible_user }}
+        file=/tmp/{{ inventory_hostname }}.conf
+        overwrite=yes
+        replace=no
+        logfile=/tmp/changes.log
+
+    - name: Checking NETCONF connectivity
+      wait_for: host={{ ansible_ssh_host }} port={{ ansible_ssh_port }} timeout=5

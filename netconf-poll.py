@@ -12,15 +12,17 @@ from time import sleep
 from influxdb import InfluxDBClient
 import time
 import logging
+import argparse
 
 #############
 # Constants #
 #############
 device_ip = "192.168.56.107"
 user_name = "root"
-password = "junos123"
+#password = "junos123"
+password = 'Juniper'
 sleep_time = 600        # interval between polls
-logging_level = "DEBUG"
+logging_level = logging.INFO
 
 #############
 # Functions #
@@ -37,11 +39,12 @@ def get_rpm_history(device, db, sleep_time):
 
     # find our test results in the returned XML
     probe_single_results = rpm_history.findall('.//probe-single-results')
+    print(type(probe_single_results))
 
     data_point = {}
 
     for results in probe_single_results:
-        #time = get_current_time()
+        # time = get_current_time()
 
         # build our InfluxDB JSON
         for tag in ('owner', 'test-name', 'probe-time', 'probe-status', 'rtt'):
@@ -49,9 +52,13 @@ def get_rpm_history(device, db, sleep_time):
 
             if elem is not None:
                 data_point[tag] = elem.text
-            else:
+            elif tag == 'rtt' and elem is None:
+                # this means our test probably failed, so we want to know about it
                 logging.warning("Element {} not returned".format(tag))
                 data_point[tag] = 0     # we'll assume anything not found is zero for now
+            elif tag == 'probe-status' and elem is None:
+                # lack of probe-status indicates test success?
+                pass
 
         point = [
             {
@@ -70,7 +77,8 @@ def get_rpm_history(device, db, sleep_time):
 
         #
         logging.debug(point)
-        db.write_points(point)
+        result = db.write_points(point)
+
     logging.info("Sleeping for {} seconds".format(sleep_time))
     sleep(sleep_time)
 
@@ -100,19 +108,34 @@ def get_port_stats(device, db, sleep_time):
     logging.info("Sleeping for {} seconds...".format(sleep_time))
     sleep(sleep_time)
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+    description='Arguments for RPM Polling')
+    parser.add_argument('--target', type=str, required=False, default='192.168.56.107',
+                        help='default IP to log into Juniper SRX')
+    parser.add_argument('--username', type=str, required=False, default='root',
+                        help='default username to log into Juniper SRX')
+    parser.add_argument('--password', type=str, required=False, default='Juniper',
+                        help='default password to log into Juniper SRX')
+    return parser.parse_args()
 
 ##############
 # MAIN BLOCK #
 ##############
-def main():
-    device = Device(host=device_ip, port=22, user=user_name, passwd=password)
+def main(target='192.168.56.107', username='root', password='Juniper'):
+    device = Device(host=target, port=22, user=username, passwd=password)
     device.open()
     switch_name = device.facts[ 'fqdn' ]
-    logging.info('Connected to', switch_name, '(', device.facts[ 'model' ], 'running', device.facts[ 'version' ])
-    ports_table = EthPortTable(device)
+    logging.info('Connected to {}, {} running {}'.format(switch_name,
+                                                         device.facts['model'],
+                                                        device.facts[ 'version' ]))
+    # ports_table = EthPortTable(device)
 
     db = InfluxDBClient('localhost', 8086, 'root', 'root', 'network')
     logging.info('Connected to InfluxDB')
+
+    db.create_database('network', if_not_exists=False)
+
 
     logging.info('Staring metrics collection...')
 
@@ -124,6 +147,8 @@ def main():
 # executes only if not called as a module
 if __name__ == "__main__":
 
-   logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    args = parse_args()
 
-   main()
+    logging.basicConfig(level=logging_level, format='%(asctime)s - %(levelname)s - %(message)s')
+
+    main(target=args.target, username=args.username, password=args.password)
