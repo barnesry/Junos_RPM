@@ -36,7 +36,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
         # Create a private network, which allows host-only access to the machine
         # using a specific IP.
-        srv.vm.network "private_network", ip: "192.168.57.199", virtualbox__intnet: "vboxintnet1"
+        srv.vm.network "private_network", ip: "192.168.56.199"
+	# virtualbox__intnet: "vboxintnet1"
 
         # Create a public network, which generally matched to bridged network.
         # Bridged networks make the machine appear as another physical device on
@@ -83,18 +84,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         sudo pip install junos-eznc
 
         # Install InfluxDB
-        wget https://dl.influxdata.com/influxdb/releases/influxdb_0.13.0_amd64.deb
-        sudo dpkg -i influxdb_0.13.0_amd64.deb
-        # wget -O /tmp/influxdb_latest_amd64.deb https://s3.amazonaws.com/influxdb/influxdb_latest_amd64.deb
-        # sudo dpkg -i /tmp/influxdb_latest_amd64.deb
+        wget --progress=dot:giga -O /tmp/influxdb_0.13.0_amd64.deb https://dl.influxdata.com/influxdb/releases/influxdb_0.13.0_amd64.deb
+        sudo dpkg -i /tmp/influxdb_0.13.0_amd64.deb
         sudo pip install influxdb
 
         # Install Grafana
-        wget https://grafanarel.s3.amazonaws.com/builds/grafana_3.0.2-1463383025_amd64.deb
-        # wget -O /tmp/grafana_2.0.2_amd64.deb https://grafanarel.s3.amazonaws.com/builds/grafana_2.0.2_amd64.deb
+        wget --progress=dot:giga -O /tmp/grafana_3.0.2-1463383025_amd64.deb https://grafanarel.s3.amazonaws.com/builds/grafana_3.0.2-1463383025_amd64.deb
         sudo apt-get install -y adduser libfontconfig
-        # sudo dpkg -i /tmp/grafana_2.0.2_amd64.deb
-        sudo dpkg -i grafana_3.0.2-1463383025_amd64.deb
+        sudo dpkg -i /tmp/grafana_3.0.2-1463383025_amd64.deb
 
         # Start our Services
         sudo service influxdb start
@@ -127,7 +124,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
         # In vSRX 1.0 the first interface in Vagrant is assigned automagically to the NAT interface (ie. ge-0/0/0)
 
-        # Management port (our inside interface ge-0/0/1)
+        # Management port (our inside interface ge-0/0/1 which we want to be vboxnet0 our host-only)
         vsrx.vm.network 'private_network', auto_config: false, nic_type: 'virtio', ip: '192.168.56.107'
 
     end
@@ -141,9 +138,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     if !Vagrant::Util::Platform.windows?
         config.vm.provision "ansible" do |ansible|
             ansible.groups = {
-                "server" => [ "ubuntu-monitoring" ],
-                "vsrx" => [ "vsrx" ],
-                "all:children" => ["vsrx", "server"]
+                "vsrx" => [ "127.0.0.1" ],
+                "all:children" => ["vsrx" ]
             }
             ansible.verbose = 'v'
             ansible.playbook = "provisioning/playbook-deploy-config.yaml"

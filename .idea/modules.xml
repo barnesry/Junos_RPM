@@ -2,7 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../JuniperJeeves/.idea/JuniperJeeves.iml" filepath="$PROJECT_DIR$/../JuniperJeeves/.idea/JuniperJeeves.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/Junos_RPM.iml" filepath="$PROJECT_DIR$/.idea/Junos_RPM.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../REST_Bottle_Test/.idea/REST_Bottle_Test.iml" filepath="$PROJECT_DIR$/../REST_Bottle_Test/.idea/REST_Bottle_Test.iml" />
     </modules>
   </component>
 </project>
